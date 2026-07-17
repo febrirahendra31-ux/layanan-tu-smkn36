@@ -460,9 +460,9 @@
                                 <option value="X-DKV">Kelas XII-DKV</option>
                                 <option value="X-TKJ">Kelas XII-TKJ</option>
                                 <option value="X-TP">Kelas XII-TP</option>
-                                <option value="X-TKR">Kelas XII-TKR</option>
-                                <option value="X-TAB">Kelas XII-TAB</option>
-                                <option value="X-AIH">Kelas XII-AIH</option>
+                                <option value="X-TKR">Kelas X-TKR</option>
+                                <option value="X-TAB">Kelas X-TAB</option>
+                                <option value="X-AIH">Kelas X-AIH</option>
                             </select>
                         </div>
                         <div>
@@ -1419,6 +1419,21 @@ function doPost(e) {
         </div>
     </div>
 
+    <!-- CUSTOM DELETE LETTER CONFIRM MODAL -->
+    <div id="deleteLetterConfirmModal" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center z-[60] hidden no-print animate-fade-in">
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-sm w-full mx-4 p-6 space-y-4">
+            <div class="flex items-center gap-3 text-red-600">
+                <div class="bg-red-50 p-2.5 rounded-xl"><i class="fa-solid fa-trash-can text-lg"></i></div>
+                <h3 class="font-extrabold text-sm text-slate-800">Hapus Permohonan Surat</h3>
+            </div>
+            <p class="text-xs text-slate-500 leading-relaxed">Apakah Anda yakin ingin menghapus permohonan surat ini secara permanen dari antrean? Tindakan ini tidak dapat dibatalkan.</p>
+            <div class="flex justify-end gap-2 text-xs font-semibold pt-1">
+                <button onclick="closeDeleteLetterModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl transition-all">Batal</button>
+                <button id="btnExecuteDeleteLetter" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95">Hapus Permanen</button>
+            </div>
+        </div>
+    </div>
+
     <!-- CLOUD SYNC MODAL -->
     <div id="syncModal" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center z-[60] hidden no-print animate-fade-in">
         <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full mx-4 p-6 space-y-6">
@@ -1481,6 +1496,7 @@ function doPost(e) {
         let currentUserSession = null;
         let activeStudentPhotoBase64 = "";
         let studentIdToDelete = null;
+        let letterIdToDelete = null;
         let activeGradeStudentId = null;
 
         // Temp Storage Base64 Dokumen KJP
@@ -2394,6 +2410,33 @@ function doPost(e) {
             }
         }
 
+        function deleteLetter(id) {
+            if (currentRole !== 'admin' && currentRole !== 'staf_surat') {
+                showToast('Akses Ditolak: Hanya Admin atau Staf Surat yang dapat menghapus permohonan.', 'fa-circle-xmark', 'bg-red-900');
+                return;
+            }
+            letterIdToDelete = id;
+            document.getElementById('deleteLetterConfirmModal').classList.remove('hidden');
+            document.getElementById('btnExecuteDeleteLetter').onclick = executeDeleteLetter;
+        }
+
+        function closeDeleteLetterModal() {
+            document.getElementById('deleteLetterConfirmModal').classList.add('hidden');
+            letterIdToDelete = null;
+        }
+
+        function executeDeleteLetter() {
+            if (letterIdToDelete !== null) {
+                letterRequests = letterRequests.filter(s => s.id !== letterIdToDelete);
+                localStorage.setItem('buku_induk_surat', JSON.stringify(letterRequests));
+                showToast(`Permohonan surat ${letterIdToDelete} berhasil dihapus.`, 'fa-trash-can', 'bg-red-900');
+                closeDeleteLetterModal();
+                renderSuratDashboard();
+                
+                autoSaveCloud('letters');
+            }
+        }
+
         function renderSuratDashboard() {
             if (!currentUserSession) return;
 
@@ -2906,6 +2949,9 @@ function doPost(e) {
                                         <i class="fa-solid fa-download"></i>
                                     </a>
                                 ` : ''}
+                                <button onclick="deleteLetter('${s.id}')" class="bg-red-50 hover:bg-red-600 hover:text-white text-red-600 text-[10px] p-2 rounded-lg border border-red-200 transition flex items-center justify-center" title="Hapus Permohonan">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
                             </div>
                         </div>
                     </td>
