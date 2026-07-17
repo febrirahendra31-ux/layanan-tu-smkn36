@@ -1487,7 +1487,20 @@ function doPost(e) {
         <span id="toast-text">Berhasil memperbarui database siswa!</span>
     </div>
 
+    <!-- JAVASCRIPT LOGIC & STATE MANAGEMENT -->
     <script>
+        // =========================================================================
+        // PENTING: ISI DAN TEMPELKAN URL GOOGLE APPS SCRIPT ANDA DI BAWAH INI
+        // Agar seluruh perangkat & browser baru otomatis terhubung ke database awan!
+        // Contoh: const CONFIG_DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbx.../exec";
+        // =========================================================================
+        const CONFIG_DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycby39Qw5HT_GaG-Bdc1SPQf24cfPCtvH8A7Drt8IADjN_fd4PfWjFDhNeDleIyeMLBNy/exec"; 
+
+        // Fungsi pembantu untuk mengambil URL Google Apps Script aktif (memprioritaskan input lokal admin)
+        function getGasUrl() {
+            return localStorage.getItem('buku_induk_gas_url') || CONFIG_DEFAULT_GAS_URL;
+        }
+
         // State Global
         let currentRole = 'admin';
         let students = [];
@@ -1657,10 +1670,10 @@ function doPost(e) {
         };
 
         function loadGasUrl() {
-            const savedUrl = localStorage.getItem('buku_induk_gas_url');
-            if (savedUrl) {
+            const activeUrl = getGasUrl();
+            if (activeUrl) {
                 const gasInput = document.getElementById('gas-url-input');
-                if (gasInput) gasInput.value = savedUrl;
+                if (gasInput) gasInput.value = activeUrl;
             }
         }
 
@@ -3086,13 +3099,13 @@ function doPost(e) {
         }
 
         function saveGasUrl() {
-            const url = document.getElementById('gas-url-input').value;
+            const url = document.getElementById('gas-url-input').value.trim();
             if (!url || !url.includes('script.google.com/macros/')) {
                 showToast('Format URL Google Apps Script tidak valid.', 'fa-circle-xmark', 'bg-amber-600');
                 return;
             }
             localStorage.setItem('buku_induk_gas_url', url);
-            showToast('URL Web App berhasil disimpan!', 'fa-cloud-arrow-up', 'bg-emerald-600');
+            showToast('URL Web App berhasil disimpan di perangkat ini!', 'fa-cloud-arrow-up', 'bg-emerald-600');
             autoLoadCloud();
         }
 
@@ -3145,7 +3158,7 @@ function doPost(e) {
         }
 
         async function autoLoadCloud() {
-            const gasUrl = localStorage.getItem('buku_induk_gas_url');
+            const gasUrl = getGasUrl();
             if (!gasUrl) {
                 updateCloudIndicator('offline');
                 return;
@@ -3183,7 +3196,7 @@ function doPost(e) {
         }
 
         async function autoSaveCloud(type) {
-            const gasUrl = localStorage.getItem('buku_induk_gas_url');
+            const gasUrl = getGasUrl();
             if (!gasUrl) {
                 updateCloudIndicator('offline');
                 return;
@@ -3229,7 +3242,7 @@ function doPost(e) {
         }
 
         async function executeSync(direction) {
-            const gasUrl = localStorage.getItem('buku_induk_gas_url');
+            const gasUrl = getGasUrl();
             if (!gasUrl) {
                 showToast('Atur URL Google Apps Script terlebih dahulu di menu "Setup Apps Script"!', 'fa-triangle-exclamation', 'bg-amber-600');
                 closeSyncModal();
