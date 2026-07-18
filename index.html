@@ -1608,35 +1608,40 @@ function doPost(e) {
                 document.body.removeChild(link);
             } catch (error) {
                 console.warn("Direct download failed, falling back to Blob decoding:", error);
-                const arr = base64Data.split(',');
-                const mime = arr[0].match(/:(.*?);/)[1];
-                const bstr = atob(arr[1]);
-                let n = bstr.length;
-                const u8arr = new Uint8Array(n);
-                while(n--) {
-                    u8arr[n] = bstr.charCodeAt(n);
+            }
+
+            // Sebagai cadangan tangguh untuk iframe sandbox, buka di jendela baru
+            try {
+                const newTab = window.open();
+                if (newTab) {
+                    newTab.document.write('<title>' + fileName + '</title><iframe src="' + base64Data + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>');
+                    showToast('PDF dibuka di jendela baru. Silakan simpan / cetak.', 'fa-up-right-from-square', 'bg-emerald-600');
                 }
-                const blob = new Blob([u8arr], {type: mime});
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error("Gagal membuka jendela fallback PDF:", e);
             }
         }
 
-        // Fungsi yang dipicu oleh akun Siswa untuk mengunduh PDF hasil upload staf TU
+        // Fungsi yang dipicu oleh akun Siswa untuk mengunduh PDF hasil upload staf TU (Drive atau Base64)
         function downloadStudentPdf(letterId) {
             const s = letterRequests.find(x => x.id === letterId);
             if (!s || !s.pdfFile) {
                 showToast('Gagal: Berkas PDF surat belum diunggah atau tidak ditemukan!', 'fa-circle-xmark', 'bg-red-900');
                 return;
             }
-            downloadBase64File(s.pdfFile, `Hasil_Surat_Resmi_${s.id}.pdf`);
-            showToast('Berhasil mengunduh dokumen PDF resmi!', 'fa-file-arrow-down', 'bg-emerald-600');
+
+            // Jika isinya berupa tautan URL Google Drive (Mulai dengan http/https)
+            if (s.pdfFile.startsWith('http://') || s.pdfFile.startsWith('https://')) {
+                showToast('Mengalihkan ke tautan unduh Google Drive...', 'fa-arrow-up-right-from-square', 'bg-emerald-600');
+                const newTab = window.open(s.pdfFile, '_blank');
+                if (!newTab) {
+                    showToast('Popup terblokir! Izinkan popup untuk mengunduh surat.', 'fa-triangle-exclamation', 'bg-amber-600');
+                }
+            } else {
+                // Jika masih berupa penyimpanan lokal Base64
+                downloadBase64File(s.pdfFile, `Hasil_Surat_Resmi_${s.id}.pdf`);
+                showToast('Mencoba mengunduh dokumen PDF lokal...', 'fa-file-arrow-down', 'bg-emerald-600');
+            }
         }
 
         // Auto-Logout (Inactivity Timeout)
@@ -2669,11 +2674,12 @@ function doPost(e) {
             reader.readAsDataURL(file);
         }
 
-        function handleLetterPdfUpload(event, letterId) {
+        async function handleLetterPdfUpload(event, letterId) {
             const file = event.target.files[0];
             if (!file) return;
 
-            if (file.type !== "application/pdf") {
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            if (file.type !== "application/pdf" && fileExtension !== "pdf") {
                 showToast("Error: Berkas yang diunggah harus berformat PDF!", "fa-circle-xmark", "bg-red-900");
                 event.target.value = "";
                 return;
@@ -2685,19 +2691,50 @@ function doPost(e) {
                 return;
             }
 
+            showToast("Membaca berkas dokumen...", "fa-spinner animate-spin", "bg-blue-900");
+
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 const base64Data = e.target.result;
+                const gasUrl = getGasUrl();
+                let finalPdfValue = base64Data; // default lokal jika offline
+
+                // Jika terhubung ke Cloud, unggah langsung ke Google Drive melalui GAS
+                if (gasUrl) {
+                    showToast("Mengunggah PDF ke Google Drive...", "fa-spinner animate-spin", "bg-indigo-900");
+                    try {
+                        const response = await fetch(gasUrl, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                type: 'uploadPdf',
+                                fileName: `Surat_${letterId}_SMK36.pdf`,
+                                data: base64Data
+                            })
+                        });
+                        const result = await response.json();
+                        if (result && result.status === 'success' && result.url) {
+                            finalPdfValue = result.url; // Simpan tautan unduh Drive yang sangat hemat karakter
+                        } else {
+                            throw new Error(result.message || "Gagal mengunggah ke Drive");
+                        }
+                    } catch (error) {
+                        console.error("Gagal mengunggah berkas ke Drive, fallback ke lokal:", error);
+                        showToast("Batas sel terlampaui. Disimpan lokal di browser ini saja.", "fa-triangle-exclamation", "bg-amber-600");
+                    }
+                }
+
                 const index = letterRequests.findIndex(s => s.id === letterId);
                 if (index !== -1) {
-                    letterRequests[index].pdfFile = base64Data;
+                    letterRequests[index].pdfFile = finalPdfValue;
                     letterRequests[index].status = "Selesai";
+                    
                     localStorage.setItem('buku_induk_surat', JSON.stringify(letterRequests));
-                    showToast(`Sukses: Dokumen PDF surat ${letterId} berhasil diunggah!`, 'fa-file-pdf', 'bg-emerald-600');
+                    showToast(`Sukses: Berkas surat ${letterId} berhasil diproses!`, 'fa-circle-check', 'bg-emerald-600');
                     renderPelayananSuratAdmin();
                     
                     autoSaveCloud('letters');
                 }
+                event.target.value = "";
             };
             reader.readAsDataURL(file);
         }
