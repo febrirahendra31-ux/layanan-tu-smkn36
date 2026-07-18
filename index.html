@@ -1565,7 +1565,7 @@ function doPost(e) {
         // Agar seluruh perangkat & browser baru otomatis terhubung ke database awan!
         // Contoh: const CONFIG_DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbx.../exec";
         // =========================================================================
-        const CONFIG_DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbxiHoSFFXV5AwDJ9Qw-ShssBJWe9z_-MhJQxKS4iHjgZ4oS0rAcsIGG60dYGfKDC_yH/exec"; 
+        const CONFIG_DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbzbKkxoLe6rcXN6RdrZeAuRxX2duAqMn-YS87KMZELu9fr5lrwnf5r3uwij9VfByio_/exec"; 
 
         // Fungsi pembantu untuk mengambil URL Google Apps Script aktif (memprioritaskan input lokal admin)
         function getGasUrl() {
@@ -2705,13 +2705,22 @@ function doPost(e) {
                     try {
                         const response = await fetch(gasUrl, {
                             method: 'POST',
+                            headers: {
+                                'Content-Type': 'text/plain;charset=utf-8'
+                            },
                             body: JSON.stringify({
                                 type: 'uploadPdf',
                                 fileName: `Surat_${letterId}_SMK36.pdf`,
                                 data: base64Data
                             })
                         });
-                        const result = await response.json();
+                        const text = await response.text();
+
+                        if (text.trim().startsWith('<!DOCTYPE html>') || text.includes('google-signin') || text.includes('Service Login')) {
+                            throw new Error("Izin Akses Terblokir Google. Pastikan deployment diatur ke 'Anyone'.");
+                        }
+
+                        const result = JSON.parse(text);
                         if (result && result.status === 'success' && result.url) {
                             finalPdfValue = result.url; // Simpan tautan unduh Drive yang sangat hemat karakter
                         } else {
@@ -2719,7 +2728,7 @@ function doPost(e) {
                         }
                     } catch (error) {
                         console.error("Gagal mengunggah berkas ke Drive, fallback ke lokal:", error);
-                        showToast("Batas sel terlampaui. Disimpan lokal di browser ini saja.", "fa-triangle-exclamation", "bg-amber-600");
+                        showToast("Batas sel terlampaui / CORS Error. Disimpan lokal saja.", "fa-triangle-exclamation", "bg-amber-600");
                     }
                 }
 
@@ -3455,7 +3464,15 @@ function doPost(e) {
             updateCloudIndicator('loading', "Mengunduh pembaharuan kearsipan awan terbaru...");
             try {
                 const response = await fetch(gasUrl, { method: 'GET' });
-                const result = await response.json();
+                const text = await response.text();
+
+                // Deteksi jika Google Apps Script dibatasi hak aksesnya (meminta login Google)
+                if (text.trim().startsWith('<!DOCTYPE html>') || text.includes('google-signin') || text.includes('Service Login')) {
+                    updateCloudIndicator('error', "Eror Izin Akses: Atur opsi 'Siapa saja (Anyone)' saat deploy!");
+                    return;
+                }
+
+                const result = JSON.parse(text);
 
                 if (result && result.status === 'success') {
                     const parsedStudents = JSON.parse(result.students || "[]");
@@ -3479,7 +3496,7 @@ function doPost(e) {
                 }
             } catch (error) {
                 console.error("Auto load cloud failed:", error);
-                updateCloudIndicator('error', "Koneksi terputus. Menggunakan database aman offline.");
+                updateCloudIndicator('error', "Koneksi terputus / CORS Block. Menggunakan database aman offline.");
             }
         }
 
@@ -3497,11 +3514,23 @@ function doPost(e) {
                     data: type === 'students' ? students : letterRequests
                 };
 
+                // Mengirim payload sebagai text/plain untuk memotong pra-pemeriksaan OPTIONS (CORS preflight bypass)
                 const response = await fetch(gasUrl, {
                     method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    },
                     body: JSON.stringify(payload)
                 });
-                const result = await response.json();
+                const text = await response.text();
+
+                if (text.trim().startsWith('<!DOCTYPE html>') || text.includes('google-signin') || text.includes('Service Login')) {
+                    updateCloudIndicator('error', "Gagal Upload: Harap deploy Web App dengan opsi akses 'Anyone'!");
+                    showToast("Gagal: Masalah Otorisasi Google", "fa-triangle-exclamation", "bg-red-900");
+                    return;
+                }
+
+                const result = JSON.parse(text);
 
                 if (result && result.status === 'success') {
                     updateCloudIndicator('online');
@@ -3544,32 +3573,48 @@ function doPost(e) {
                     // Push data siswa ke cloud
                     const resStudents = await fetch(gasUrl, {
                         method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ type: 'students', data: students })
                     });
-                    const resultStudents = await resStudents.json();
+                    const textStudents = await resStudents.text();
 
                     // Push data surat/permohonan ke cloud
                     const resLetters = await fetch(gasUrl, {
                         method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ type: 'letters', data: letterRequests })
                     });
-                    const resultLetters = await resLetters.json();
+                    const textLetters = await resLetters.text();
+
+                    if (textStudents.trim().startsWith('<!DOCTYPE html>') || textLetters.trim().startsWith('<!DOCTYPE html>')) {
+                        throw new Error("Otorisasi Google diblokir. Pastikan konfigurasi akses diset ke 'Anyone'.");
+                    }
+
+                    const resultStudents = JSON.parse(textStudents);
+                    const resultLetters = JSON.parse(textLetters);
 
                     if (resultStudents.status === 'success' && resultLetters.status === 'success') {
                         showToast('Sinkronisasi Berhasil! Seluruh data lokal terunggah.', 'fa-cloud-arrow-up', 'bg-emerald-600');
                         closeSyncModal();
+                        updateCloudIndicator('online');
                     } else {
                         showToast('Gagal memproses unggah data cloud.', 'fa-circle-xmark', 'bg-red-900');
                     }
                 } catch (error) {
                     console.error(error);
-                    showToast('Gagal tersambung ke Google Apps Script: ' + error.message, 'fa-triangle-exclamation', 'bg-red-900');
+                    showToast('Gagal sinkronisasi: ' + error.message, 'fa-triangle-exclamation', 'bg-red-900');
                 }
             } else if (direction === 'pull') {
                 showToast('Mengunduh data kearsipan terbaru dari awan...', 'fa-spinner animate-spin', 'bg-indigo-900');
                 try {
                     const response = await fetch(gasUrl, { method: 'GET' });
-                    const result = await response.json();
+                    const text = await response.text();
+
+                    if (text.trim().startsWith('<!DOCTYPE html>')) {
+                        throw new Error("Permintaan ditolak Google. Harap atur deployment Web App ke 'Anyone'.");
+                    }
+
+                    const result = JSON.parse(text);
 
                     if (result && (result.students || result.letters)) {
                         const parsedStudents = JSON.parse(result.students || "[]");
@@ -3589,6 +3634,7 @@ function doPost(e) {
                         renderDatabaseTable();
                         renderSuratDashboard();
                         closeSyncModal();
+                        updateCloudIndicator('online');
                     } else {
                         showToast('Respon tidak valid atau database cloud kosong.', 'fa-triangle-exclamation', 'bg-amber-600');
                     }
