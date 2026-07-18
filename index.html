@@ -338,6 +338,10 @@
                 <button onclick="changeSection('gas')" id="nav-gas" class="w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-medium transition-colors text-slate-600 hover:bg-slate-50 admin-only">
                     <i class="fa-brands fa-google text-lg w-5 text-red-500"></i> Setup Apps Script
                 </button>
+
+                <button onclick="changeSection('logo')" id="nav-logo" class="w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-medium transition-colors text-slate-600 hover:bg-slate-50 admin-only">
+                    <i class="fa-solid fa-image text-lg w-5 text-amber-500"></i> Pengaturan Kop Surat
+                </button>
                 
                 <div class="mt-8 bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200 text-center">
                     <h4 class="text-xs font-semibold text-slate-700">Status Database</h4>
@@ -562,14 +566,17 @@
 
                     <!-- HALAMAN 1: BIODATA & DATA KELUARGA -->
                     <div class="relative p-6 space-y-8 text-black">
-                        <!-- Kop Dinas Pendidikan -->
-                        <div class="text-center border-b-2 border-double border-black pb-4">
-                            <h2 class="text-lg font-bold tracking-widest uppercase">PROVINSI DAERAH KHUSUS IBUKOTA JAKARTA</h2>
-                            <h2 class="text-lg font-bold tracking-widest uppercase">DINAS PENDIDIKAN</h2>
-                            <h3 class="text-md font-bold uppercase mt-1">SMK NEGERI 36 JAKARTA</h3>
-                            <p class="text-xs font-sans italic text-slate-500 mt-1">Jalan Baru Kosambi III, Kalibaru, Cilincing, Telepon/Faksimile : 4401523, 44830732</p>
-                            <p class="text-xs font-sans italic text-slate-500 mt-1">http://smkn36jakarta.sch.id, Email : smkn36_jkt@yahoo.com</p>
-                            <h3 class="text-md font-bold uppercase mt-1">JAKARTA</h3>
+                        <!-- Kop Dinas Pendidikan dengan Tata Letak Logo Kiri Seimbang -->
+                        <div class="border-b-2 border-double border-black pb-4 flex items-center gap-4">
+                            <img class="kop-logo-img w-16 h-16 object-contain shrink-0" src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Jaya_Raya_logo_of_Jakarta.svg" onerror="this.onerror=null; this.src='https://img.icons8.com/color/96/government-of-jakarta.png';" alt="Logo Kop Surat">
+                            <div class="text-center flex-grow pr-16">
+                                <h2 class="text-sm font-bold tracking-widest uppercase leading-tight">PROVINSI DAERAH KHUSUS IBUKOTA JAKARTA</h2>
+                                <h2 class="text-sm font-black tracking-widest uppercase mt-0.5 leading-tight">DINAS PENDIDIKAN</h2>
+                                <h3 class="text-base font-black uppercase mt-1 leading-none">SMK NEGERI 36 JAKARTA</h3>
+                                <p class="text-[9px] font-sans italic text-slate-500 mt-1.5 leading-tight">Jalan Baru Kosambi III, Kalibaru, Cilincing, Telepon/Faksimile : 4401523, 44830732</p>
+                                <p class="text-[9px] font-sans italic text-slate-500 leading-tight">http://smkn36jakarta.sch.id, Email : smkn36_jkt@yahoo.com</p>
+                                <h3 class="text-xs font-bold uppercase mt-1 leading-none">JAKARTA</h3>
+                            </div>
                         </div>
 
                         <!-- Judul Lembar Buku Induk -->
@@ -827,6 +834,76 @@ function doPost(e) {
                                     <i class="fa-solid fa-triangle-exclamation text-yellow-600 mt-0.5"></i>
                                     <div class="text-[10px] text-yellow-800">
                                         <strong>Status Sistem:</strong> Saat ini aplikasi masih berjalan pada mode <strong>Local Storage</strong> (Tersimpan di Browser). Jika Link GAS diatur dengan benar, aplikasi dapat dialihkan ke mode Sinkronisasi Awan (Cloud).
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: PENGATURAN KOP SURAT (LOGO UPLOAD & LIVE PREVIEW) -->
+            <div id="section-logo" class="space-y-6 hidden">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                    <div class="flex items-center gap-3 border-b border-slate-100 pb-4 mb-4">
+                        <div class="bg-amber-50 p-3 rounded-2xl text-amber-600"><i class="fa-solid fa-image text-2xl"></i></div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">Pengaturan Kop Surat & Identitas</h2>
+                            <p class="text-xs text-slate-400">Personalisasi logo resmi yang akan tampil pada lembar Buku Induk dan dokumen Surat Resmi Sekolah.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs text-slate-600">
+                        <!-- Sisi Kiri: Unggah Logo -->
+                        <div class="space-y-4 flex flex-col justify-between border border-slate-100 p-5 rounded-2xl bg-slate-50/30">
+                            <div>
+                                <h3 class="font-bold text-slate-700 text-sm mb-2"><i class="fa-solid fa-file-arrow-up mr-1 text-blue-600"></i> Unggah File Logo Baru</h3>
+                                <p class="text-slate-400 text-[11px] mb-4">Mendukung format gambar transparan (PNG, JPG, SVG). Direkomendasikan logo dengan rasio 1:1 kotak presisi dengan ukuran berkas maksimal 500KB.</p>
+                                
+                                <div class="border-2 border-dashed border-slate-200 hover:border-blue-400 transition-colors p-6 rounded-2xl bg-white text-center flex flex-col items-center justify-center gap-2 group cursor-pointer relative">
+                                    <input type="file" id="admin-logo-input" accept="image/*" onchange="previewAdminLogo(event)" class="absolute inset-0 opacity-0 cursor-pointer">
+                                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xl group-hover:scale-110 transition"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                                    <p class="font-bold text-slate-700 text-xs">Pilih Gambar atau Tarik ke Sini</p>
+                                    <p class="text-[10px] text-slate-400">PNG, JPG, atau SVG maks 500KB</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 pt-2">
+                                <div class="flex gap-2">
+                                    <button onclick="saveAdminLogo()" class="bg-gradient-to-r from-blue-700 to-indigo-900 hover:from-blue-800 hover:to-indigo-950 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition active:scale-95 flex-grow flex items-center justify-center gap-1.5">
+                                        <i class="fa-solid fa-floppy-disk"></i> Terapkan Logo Baru
+                                    </button>
+                                    <button onclick="resetAdminLogoToDefault()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 border border-slate-200">
+                                        Reset Default
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sisi Kanan: Pratinjau Logo Aktif -->
+                        <div class="flex flex-col items-center justify-center border border-slate-100 p-5 rounded-2xl bg-slate-50/50">
+                            <p class="font-bold text-slate-700 mb-3 text-center"><i class="fa-solid fa-eye mr-1 text-amber-500"></i> Pratinjau Logo Aktif</p>
+                            <div class="w-32 h-32 bg-white p-3 rounded-2xl border border-slate-200 flex items-center justify-center shadow-md relative overflow-hidden">
+                                <img id="admin-logo-preview" src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Jaya_Raya_logo_of_Jakarta.svg" onerror="this.onerror=null; this.src='https://img.icons8.com/color/96/government-of-jakarta.png';" class="max-w-full max-h-full object-contain" alt="Logo Kop Surat">
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-3 italic text-center leading-normal max-w-xs">Gambar logo yang tampil di atas adalah logo yang akan otomatis terpasang pada Kop Surat Resmi & Cetakan Buku Induk Fisik.</p>
+                        </div>
+
+                        <!-- Panel Bawah: Live Simulation Pratinjau Kop Surat Resmi -->
+                        <div class="lg:col-span-2 border border-slate-200 p-6 rounded-2xl bg-white mt-2">
+                            <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                                <i class="fa-solid fa-desktop"></i> Simulasi Tampilan Kop Resmi Dinas Pendidikan
+                            </h3>
+                            <div class="bg-slate-100 p-4 rounded-xl border border-slate-200 overflow-x-auto">
+                                <div class="bg-white p-6 rounded shadow-sm border border-slate-300 min-w-[600px] font-serif text-black select-none">
+                                    <div class="border-b-2 border-double border-black pb-3 flex items-center gap-4">
+                                        <img class="kop-logo-img w-14 h-14 object-contain shrink-0" src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Jaya_Raya_logo_of_Jakarta.svg" onerror="this.onerror=null; this.src='https://img.icons8.com/color/96/government-of-jakarta.png';" alt="Logo Kop Surat">
+                                        <div class="text-center flex-grow pr-14 leading-tight">
+                                            <h2 class="text-[10px] font-bold tracking-widest uppercase">PROVINSI DAERAH KHUSUS IBUKOTA JAKARTA</h2>
+                                            <h2 class="text-[10px] font-black tracking-widest uppercase mt-0.5">DINAS PENDIDIKAN</h2>
+                                            <h3 class="text-xs font-black uppercase mt-0.5">SMK NEGERI 36 JAKARTA</h3>
+                                            <p class="text-[8px] font-sans italic text-slate-500 mt-1">Jalan Baru Kosambi III, Kalibaru, Cilincing, Telepon/Faksimile: 4401523, 44830732</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1566,6 +1643,7 @@ function doPost(e) {
         // Contoh: const CONFIG_DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbx.../exec";
         // =========================================================================
         const CONFIG_DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbxiqpgWZiZmyGpVCZPqJPErK2fDYGAj7qzuh9JlMmep3S2LjVMebULfhPb0U3egbzQk/exec"; 
+        const DEFAULT_LOGO_KOP_URL = "https://upload.wikimedia.org/wikipedia/commons/b/b9/Jaya_Raya_logo_of_Jakarta.svg";
 
         // Fungsi pembantu untuk mengambil URL Google Apps Script aktif (memprioritaskan input lokal admin)
         function getGasUrl() {
@@ -1582,6 +1660,7 @@ function doPost(e) {
         let studentIdToDelete = null;
         let letterIdToDelete = null;
         let activeGradeStudentId = null;
+        let tempAdminLogoBase64 = ""; // Menampung sementara logo kop sebelum disimpan
 
         // Temp Storage Base64 Dokumen KJP
         let uploadKjpKkBase64 = "";
@@ -1743,7 +1822,81 @@ function doPost(e) {
             checkSession();
             setupInactivityListeners();
             loadGasUrl();
+            loadKopLogo(); // Memuat kustomisasi logo pada saat halaman pertama kali terbuka
         };
+
+        // Fungsi untuk mengambil logo aktif saat ini
+        function getActiveKopLogo() {
+            return localStorage.getItem('buku_induk_logo_kop') || DEFAULT_LOGO_KOP_URL;
+        }
+
+        // Fungsi memuat logo kop ke seluruh komponen cetak dinamis
+        function loadKopLogo() {
+            const activeLogo = getActiveKopLogo();
+            const logoElements = document.querySelectorAll('.kop-logo-img');
+            logoElements.forEach(img => {
+                img.src = activeLogo;
+                // Pastikan jika URL SVG diblokir sandbox, dia beralih ke cadangan PNG instan
+                img.setAttribute('onerror', "this.onerror=null; this.src='https://img.icons8.com/color/96/government-of-jakarta.png';");
+            });
+            const adminPreview = document.getElementById('admin-logo-preview');
+            if (adminPreview) {
+                adminPreview.src = activeLogo;
+                adminPreview.setAttribute('onerror', "this.onerror=null; this.src='https://img.icons8.com/color/96/government-of-jakarta.png';");
+            }
+        }
+
+        // Menampilkan pratinjau sementara logo yang dipilih admin
+        function previewAdminLogo(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 500 * 1024) {
+                showToast('Ukuran berkas logo terlalu besar! Maksimal adalah 500KB.', 'fa-circle-exclamation', 'bg-red-900');
+                event.target.value = "";
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                tempAdminLogoBase64 = e.target.result;
+                const adminPreview = document.getElementById('admin-logo-preview');
+                if (adminPreview) {
+                    adminPreview.src = tempAdminLogoBase64;
+                }
+                showToast('Pratinjau logo berhasil dimuat. Klik Simpan untuk menerapkan!', 'fa-image', 'bg-blue-900');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Menyimpan logo kustomisasi secara permanen ke localStorage
+        function saveAdminLogo() {
+            if (!tempAdminLogoBase64) {
+                showToast('Silakan pilih berkas gambar logo baru terlebih dahulu!', 'fa-circle-exclamation', 'bg-amber-600');
+                return;
+            }
+            try {
+                localStorage.setItem('buku_induk_logo_kop', tempAdminLogoBase64);
+                loadKopLogo();
+                tempAdminLogoBase64 = "";
+                const inputField = document.getElementById('admin-logo-input');
+                if (inputField) inputField.value = "";
+                showToast('Logo kop surat baru berhasil diterapkan di sistem!', 'fa-circle-check', 'bg-emerald-600');
+            } catch(e) {
+                console.error(e);
+                showToast('Gagal menyimpan logo: Kapasitas memori browser penuh! Gunakan berkas gambar yang lebih kecil.', 'fa-circle-exclamation', 'bg-red-900');
+            }
+        }
+
+        // Mengembalikan logo ke default bawaan Pemprov DKI
+        function resetAdminLogoToDefault() {
+            localStorage.removeItem('buku_induk_logo_kop');
+            loadKopLogo();
+            tempAdminLogoBase64 = "";
+            const inputField = document.getElementById('admin-logo-input');
+            if (inputField) inputField.value = "";
+            showToast('Logo kop surat dikembalikan ke setelan default!', 'fa-trash-can', 'bg-slate-900');
+        }
 
         function loadGasUrl() {
             const activeUrl = getGasUrl();
@@ -1922,12 +2075,12 @@ function doPost(e) {
         }
 
         function changeSection(sectionId) {
-            if (sectionId === 'gas' && currentRole !== 'admin') {
+            if ((sectionId === 'gas' || sectionId === 'logo') && currentRole !== 'admin') {
                 showToast('Akses Ditolak: Halaman ini hanya untuk Administrator.', 'fa-circle-xmark', 'bg-red-900');
                 return;
             }
 
-            const sections = ['dashboard', 'database', 'detail', 'gas', 'surat'];
+            const sections = ['dashboard', 'database', 'detail', 'gas', 'surat', 'logo'];
             sections.forEach(s => {
                 const el = document.getElementById('section-' + s);
                 if (el) el.classList.add('hidden');
@@ -2944,6 +3097,7 @@ function doPost(e) {
             const currentDateFormatted = formatDateIndonesia(new Date().toISOString().slice(0, 10));
             const randomCode = letterId.replace("SRT-", "283");
             const numberSurat = `045.2 / ${randomCode} / TU-SMK36 / VII / 2026`;
+            const activeKopLogo = getActiveKopLogo(); // Mengambil logo aktif dari state/localStorage
             
             let specificLetterParagraphs = "";
             if (letter.jenis === "Surat Keterangan Aktif") {
@@ -2997,13 +3151,16 @@ function doPost(e) {
             }
 
             const letterHTML = `
-                <!-- Kop Surat Resmi -->
-                <div class="text-center border-b-2 border-double border-black pb-4 mb-6">
-                    <h2 class="text-xs font-bold tracking-wider uppercase leading-none">PEMERINTAH PROVINSI DAERAH KHUSUS IBUKOTA JAKARTA</h2>
-                    <h2 class="text-sm font-black tracking-widest uppercase mt-1 leading-none">DINAS PENDIDIKAN</h2>
-                    <h3 class="text-base font-black uppercase mt-1.5 leading-none">SMK NEGERI 36 JAKARTA</h3>
-                    <p class="text-[9px] font-sans italic text-slate-500 mt-1.5 leading-tight">Jalan Baru Kosambi III, Kalibaru, Cilincing, Telepon/Faksimile: 4401523, 44830732</p>
-                    <p class="text-[9px] font-sans italic text-slate-500 leading-tight">http://smkn36jakarta.sch.id &bull; Email: smkn36_jkt@yahoo.com &bull; Jakarta Utara</p>
+                <!-- Kop Surat Resmi dengan Logo Kustom -->
+                <div class="border-b-2 border-double border-black pb-4 mb-6 flex items-center gap-4">
+                    <img class="kop-logo-img w-16 h-16 object-contain shrink-0" src="${activeKopLogo}" onerror="this.onerror=null; this.src='https://img.icons8.com/color/96/government-of-jakarta.png';" alt="Logo Kop Surat">
+                    <div class="text-center flex-grow pr-16">
+                        <h2 class="text-xs font-bold tracking-wider uppercase leading-none">PEMERINTAH PROVINSI DAERAH KHUSUS IBUKOTA JAKARTA</h2>
+                        <h2 class="text-sm font-black tracking-widest uppercase mt-1 leading-none">DINAS PENDIDIKAN</h2>
+                        <h3 class="text-base font-black uppercase mt-1.5 leading-none">SMK NEGERI 36 JAKARTA</h3>
+                        <p class="text-[9px] font-sans italic text-slate-500 mt-1.5 leading-tight">Jalan Baru Kosambi III, Kalibaru, Cilincing, Telepon/Faksimile: 4401523, 44830732</p>
+                        <p class="text-[9px] font-sans italic text-slate-500 leading-tight">http://smkn36jakarta.sch.id &bull; Email: smkn36_jkt@yahoo.com &bull; Jakarta</p>
+                    </div>
                 </div>
 
                 <!-- Judul Surat -->
