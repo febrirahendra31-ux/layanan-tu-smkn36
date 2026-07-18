@@ -1597,6 +1597,48 @@ function doPost(e) {
         let uploadPipAktaBase64 = "";
         let uploadPipKtportuBase64 = "";
 
+        // Fungsi pembantu untuk mengunduh file Base64 dengan aman (mendukung lingkungan iframe tersandbox)
+        function downloadBase64File(base64Data, fileName) {
+            try {
+                const link = document.createElement("a");
+                link.href = base64Data;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.warn("Direct download failed, falling back to Blob decoding:", error);
+                const arr = base64Data.split(',');
+                const mime = arr[0].match(/:(.*?);/)[1];
+                const bstr = atob(arr[1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while(n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                const blob = new Blob([u8arr], {type: mime});
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        // Fungsi yang dipicu oleh akun Siswa untuk mengunduh PDF hasil upload staf TU
+        function downloadStudentPdf(letterId) {
+            const s = letterRequests.find(x => x.id === letterId);
+            if (!s || !s.pdfFile) {
+                showToast('Gagal: Berkas PDF surat belum diunggah atau tidak ditemukan!', 'fa-circle-xmark', 'bg-red-900');
+                return;
+            }
+            downloadBase64File(s.pdfFile, `Hasil_Surat_Resmi_${s.id}.pdf`);
+            showToast('Berhasil mengunduh dokumen PDF resmi!', 'fa-file-arrow-down', 'bg-emerald-600');
+        }
+
         // Auto-Logout (Inactivity Timeout)
         let inactivityTimeoutId = null;
         const INACTIVITY_LIMIT = 10 * 60 * 1000; // 10 menit
@@ -1629,6 +1671,59 @@ function doPost(e) {
         };
 
         // Data Mock Bawaan
+        const mockData = [
+            {
+                id: 1,
+                nisn: "0081234567",
+                nis: "2425001",
+                nik: "3172010101010001",
+                namalengkap: "Aditya Pratama",
+                jeniskelamin: "Laki-Laki",
+                agama: "Islam",
+                tempatlahir: "Jakarta",
+                tanggallahir: "2008-05-12",
+                kewarganegaraan: "WNI",
+                anakke: "1",
+                berkebutuhankhusus: "Tidak",
+                alamat: "Jl. Kosambi III No. 12, Kalibaru, Cilincing, Jakarta Utara",
+                notelepon: "081234567890",
+                namaayah: "Budi Pratama",
+                nikayah: "3172010101010002",
+                thnlahirayah: "1975",
+                pendidikanayah: "SMA",
+                pekerjaanayah: "Wiraswasta",
+                namaibu: "Siti Aminah",
+                nikibu: "3172010101010003",
+                thnlahiribu: "1980",
+                pendidikanibu: "SMA",
+                pekerjaanibu: "Ibu Rumah Tangga",
+                alamatorangtua: "Jl. Kosambi III No. 12, Kalibaru, Cilincing, Jakarta Utara",
+                nama_wali: "",
+                pekerjaan_wali: "",
+                kelas: "XI-TKJ",
+                tahunajaran: "2025/2026",
+                sekolahasal: "SMP Negeri 123 Jakarta",
+                tanggallasuk: "2024-07-15",
+                status: "Aktif",
+                foto: "",
+                nilai: {
+                    "1": { pabp: 85, pp: 88, bin: 82, pjok: 90, sjr: 80, seni: 85, mtk: 78, ing: 80, info: 88, pipas: 84, ddpk: 85, kk: "", pkk: "", pkl: "", mpp: "" }
+                }
+            }
+        ];
+        
+        const mockSurat = [
+            {
+                id: "SRT-9991",
+                date: "2026-07-18",
+                nis: "2425001",
+                jenis: "Surat Keterangan Aktif",
+                keperluan: "Pengajuan Beasiswa KJP Plus",
+                status: "Pending",
+                catatanStaf: "",
+                pdfFile: ""
+            }
+        ];
         
         function setSafeText(id, text) {
             const el = document.getElementById(id);
@@ -2945,17 +3040,38 @@ function doPost(e) {
                        </div>` 
                     : '';
 
-                // Tombol Cetak / Unduh dinonaktifkan jika belum disetujui (Pending / Proses)
+                // Penanda jika file PDF fisik basah sudah diunggah staf
+                let labelPdfUploaded = s.pdfFile 
+                    ? `<div class="mt-1 text-[10px] text-emerald-600 font-extrabold flex items-center gap-1">
+                        <i class="fa-solid fa-circle-check"></i> Dokumen PDF Resmi (Basah/Cap) Siap Diunduh
+                       </div>`
+                    : '';
+
+                // Tombol Cetak dihapus dari akun siswa. Siswa murni mengunduh berkas fisik asli yang dipindai (diupload) staf TU.
                 let printButton = "";
                 if (s.status === 'Selesai') {
+                    if (s.pdfFile) {
+                        printButton = `
+                            <button onclick="downloadStudentPdf('${s.id}')" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-md transition active:scale-95">
+                                <i class="fa-solid fa-file-arrow-down text-xs animate-bounce"></i> Unduh PDF Resmi
+                            </button>
+                        `;
+                    } else {
+                        printButton = `
+                            <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-amber-200" title="Menunggu staf TU mengunggah berkas PDF bertanda tangan dan cap resmi">
+                                <i class="fa-solid fa-clock animate-pulse"></i> Menunggu Upload PDF
+                            </span>
+                        `;
+                    }
+                } else if (s.status === 'Ditolak') {
                     printButton = `
-                        <button onclick="showLetterPreview('${s.id}')" class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition">
-                            <i class="fa-solid fa-print"></i> Cetak / Unduh Surat
+                        <button disabled class="inline-flex items-center gap-1.5 bg-red-50 text-red-400 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-red-100 cursor-not-allowed">
+                            <i class="fa-solid fa-circle-xmark"></i> Ditolak
                         </button>
                     `;
                 } else {
                     printButton = `
-                        <button disabled class="inline-flex items-center gap-1.5 bg-slate-100 text-slate-400 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 cursor-not-allowed">
+                        <button disabled class="inline-flex items-center gap-1.5 bg-slate-100 text-slate-400 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-slate-200 cursor-not-allowed">
                             <i class="fa-solid fa-hourglass-half"></i> Menunggu Verifikasi
                         </button>
                     `;
@@ -2965,6 +3081,7 @@ function doPost(e) {
                     <td class="p-3 font-bold font-mono text-slate-700">${s.id}</td>
                     <td class="p-3 font-medium text-slate-600">
                         <div class="font-bold">${s.jenis}</div>
+                        ${labelPdfUploaded}
                         ${catatanStafHtml}
                     </td>
                     <td class="p-3 text-slate-500 max-w-xs truncate" title="${s.keperluan}">${s.keperluan}</td>
@@ -2973,11 +3090,6 @@ function doPost(e) {
                             ${s.status}
                         </span>
                         ${printButton}
-                        ${(s.status === 'Selesai' && s.pdfFile) ? `
-                            <a href="${s.pdfFile}" download="Hasil_Surat_${s.id}.pdf" class="inline-flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-lg border border-emerald-200 transition">
-                                <i class="fa-solid fa-file-arrow-down"></i> Lampiran PDF
-                            </a>
-                        ` : ''}
                     </td>
                 `;
                 tbody.appendChild(tr);
