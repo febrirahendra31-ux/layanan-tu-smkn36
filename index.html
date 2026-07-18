@@ -35,7 +35,7 @@
             border: 1px solid rgba(255, 255, 255, 0.25);
         }
         
-        /* Print Styles for Buku Induk Sheet */
+        /* Print Styles for Buku Induk Sheet & Surat Resmi */
         @media print {
             body {
                 background: white !important;
@@ -59,6 +59,7 @@
             #logoutConfirmModal,
             #deleteConfirmModal,
             #syncModal,
+            #letterPreviewModal,
             #toast,
             button {
                 display: none !important;
@@ -75,7 +76,7 @@
                 width: 100% !important;
             }
             /* Atur posisi kontainer print agar memenuhi lembar kertas */
-            #printArea {
+            #printArea, #printLetterArea {
                 display: block !important;
                 position: absolute !important;
                 left: 0 !important;
@@ -110,6 +111,7 @@
         body.printing-in-progress #logoutConfirmModal,
         body.printing-in-progress #deleteConfirmModal,
         body.printing-in-progress #syncModal,
+        body.printing-in-progress #letterPreviewModal,
         body.printing-in-progress #toast,
         body.printing-in-progress button {
             display: none !important;
@@ -129,6 +131,56 @@
             width: 100% !important;
         }
         body.printing-in-progress #printArea {
+            display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            z-index: 9999 !important;
+            background: white !important;
+        }
+
+        /* Custom printing handler for Letter Documents */
+        body.printing-letter-in-progress #loginScreen,
+        body.printing-letter-in-progress header,
+        body.printing-letter-in-progress #roleIndicator,
+        body.printing-letter-in-progress #sidebarMenu,
+        body.printing-letter-in-progress footer,
+        body.printing-letter-in-progress .no-print,
+        body.printing-letter-in-progress #section-dashboard,
+        body.printing-letter-in-progress #section-database,
+        body.printing-letter-in-progress #section-surat,
+        body.printing-letter-in-progress #section-gas,
+        body.printing-letter-in-progress #studentModal,
+        body.printing-letter-in-progress #gradeModal,
+        body.printing-letter-in-progress #logoutConfirmModal,
+        body.printing-letter-in-progress #deleteConfirmModal,
+        body.printing-letter-in-progress #syncModal,
+        body.printing-letter-in-progress #letterPreviewModal,
+        body.printing-letter-in-progress #toast,
+        body.printing-letter-in-progress button {
+            display: none !important;
+        }
+        body.printing-letter-in-progress,
+        body.printing-letter-in-progress #appContainer,
+        body.printing-letter-in-progress main,
+        body.printing-letter-in-progress section,
+        body.printing-letter-in-progress #section-detail {
+            display: block !important;
+            background: white !important;
+            color: black !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            width: 100% !important;
+        }
+        body.printing-letter-in-progress #printLetterArea {
             display: block !important;
             position: absolute !important;
             left: 0 !important;
@@ -985,6 +1037,41 @@ function doPost(e) {
             <p class="text-slate-600">Dikembangkan untuk pengelolaan data siswa akurat, cepat, dan terstandarisasi digital.</p>
         </div>
     </footer>
+
+    <!-- LEMBAR PRINT KHUSUS SURAT DIGITAL (A4 Format) -->
+    <div id="printLetterArea" class="hidden bg-white p-12 max-w-4xl mx-auto font-serif text-black relative">
+        <!-- Content injected dynamically via javascript -->
+    </div>
+
+    <!-- MODAL POPUP PREVIEW SURAT RESMI -->
+    <div id="letterPreviewModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 hidden no-print">
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto flex flex-col animate-fade-in">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-blue-900 to-indigo-950 text-white p-5 rounded-t-3xl flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-file-invoice text-xl text-yellow-400"></i>
+                    <h3 class="font-bold text-sm uppercase tracking-wide">Pratinjau Dokumen Surat Resmi</h3>
+                </div>
+                <button onclick="closeLetterPreviewModal()" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <!-- Modal Body (Letter Frame) -->
+            <div class="p-6 bg-slate-100 overflow-y-auto max-h-[60vh] custom-scrollbar flex justify-center">
+                <div id="modalLetterContent" class="bg-white p-8 sm:p-12 shadow-md border border-slate-200 w-full max-w-2xl font-serif text-xs text-black">
+                    <!-- Dynamic Document Render -->
+                </div>
+            </div>
+            <!-- Modal Footer -->
+            <div class="p-4 bg-slate-50 border-t border-slate-100 rounded-b-3xl flex justify-between items-center text-xs">
+                <span class="text-slate-400 font-medium italic"><i class="fa-solid fa-circle-info"></i> Siap cetak ke berkas fisik/PDF</span>
+                <div class="flex gap-2">
+                    <button onclick="closeLetterPreviewModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl font-semibold transition">Tutup</button>
+                    <button id="btnPrintPreviewLetter" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold transition flex items-center gap-1.5 shadow-md active:scale-95">
+                        <i class="fa-solid fa-print"></i> Cetak Surat Resmi
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL POPUP FORM (ADD / EDIT SISWA) -->
     <div id="studentModal" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center z-50 hidden no-print">
@@ -2687,6 +2774,150 @@ function doPost(e) {
             autoSaveCloud('letters');
         }
 
+        // Render & cetak surat dinamis berbasis data kearsipan siswa
+        function showLetterPreview(letterId) {
+            const letter = letterRequests.find(s => s.id === letterId);
+            if (!letter) return;
+
+            const student = students.find(s => s.nis === letter.nis);
+            if (!student) {
+                showToast('Eror: Data profil siswa pemohon tidak ditemukan!', 'fa-circle-xmark', 'bg-red-950');
+                return;
+            }
+
+            // Membuat visual Kop Surat & Isi Surat secara dinamis sesuai klasifikasi
+            const currentDateFormatted = formatDateIndonesia(new Date().toISOString().slice(0, 10));
+            const randomCode = letterId.replace("SRT-", "283");
+            const numberSurat = `045.2 / ${randomCode} / TU-SMK36 / VII / 2026`;
+            
+            let specificLetterParagraphs = "";
+            if (letter.jenis === "Surat Keterangan Aktif") {
+                specificLetterParagraphs = `
+                    <p class="indent-8 text-justify leading-relaxed mb-4">Yang bertanda tangan di bawah ini Kepala Sekolah Menengah Kejuruan (SMK) Negeri 36 Jakarta, dengan ini menerangkan bahwa:</p>
+                    <table class="w-11/12 mx-auto mb-4 border-none text-xs leading-relaxed">
+                        <tr><td class="w-36 py-1">Nama Lengkap</td><td class="w-3 text-center">:</td><td class="font-bold uppercase">${student.namalengkap}</td></tr>
+                        <tr><td class="w-36 py-1">NISN / NIS</td><td class="w-3 text-center">:</td><td class="font-mono">${student.nisn} / ${student.nis}</td></tr>
+                        <tr><td class="w-36 py-1">Tempat, Tgl Lahir</td><td class="w-3 text-center">:</td><td>${student.tempatlahir}, ${formatDateIndonesia(student.tanggallahir)}</td></tr>
+                        <tr><td class="w-36 py-1">Kelas / Tingkat</td><td class="w-3 text-center">:</td><td class="font-bold">${student.kelas}</td></tr>
+                        <tr><td class="w-36 py-1">Sekolah Asal</td><td class="w-3 text-center">:</td><td>SMK Negeri 36 Jakarta</td></tr>
+                    </table>
+                    <p class="indent-8 text-justify leading-relaxed mb-4">Adalah benar yang bersangkutan merupakan peserta didik aktif pada tahun ajaran ${student.tahunajaran || '2025/2026'} di SMK Negeri 36 Jakarta.</p>
+                    <p class="indent-8 text-justify leading-relaxed mb-4">Demikian surat keterangan ini dibuat dengan sebenar-benarnya untuk dapat dipergunakan sebagaimana mestinya bagi keperluan: <strong class="underline">${letter.keperluan}</strong>.</p>
+                `;
+            } else if (letter.jenis === "Surat Keterangan Berkelakuan Baik") {
+                specificLetterParagraphs = `
+                    <p class="indent-8 text-justify leading-relaxed mb-4">Kepala Sekolah Menengah Kejuruan (SMK) Negeri 36 Jakarta menerangkan dengan sesungguhnya bahwa:</p>
+                    <table class="w-11/12 mx-auto mb-4 border-none text-xs leading-relaxed">
+                        <tr><td class="w-36 py-1">Nama Lengkap</td><td class="w-3 text-center">:</td><td class="font-bold uppercase">${student.namalengkap}</td></tr>
+                        <tr><td class="w-36 py-1">NISN / NIS</td><td class="w-3 text-center">:</td><td class="font-mono">${student.nisn} / ${student.nis}</td></tr>
+                        <tr><td class="w-36 py-1">Kelas</td><td class="w-3 text-center">:</td><td class="font-bold">${student.kelas}</td></tr>
+                        <tr><td class="w-36 py-1">Alamat Tinggal</td><td class="w-3 text-center">:</td><td>${student.alamat}</td></tr>
+                    </table>
+                    <p class="indent-8 text-justify leading-relaxed mb-4">Selama menjadi siswa di sekolah kami, yang bersangkutan senantiasa berkelakuan baik, disiplin, berdedikasi tinggi, serta tidak pernah terlibat dalam tindakan pelanggaran hukum, narkoba, ataupun tawuran pelajar.</p>
+                    <p class="indent-8 text-justify leading-relaxed mb-4">Surat keterangan ini diberikan agar dapat dipergunakan untuk: <strong class="underline">${letter.keperluan}</strong>.</p>
+                `;
+            } else if (letter.jenis === "Surat Pengantar PKL") {
+                specificLetterParagraphs = `
+                    <p class="indent-8 text-justify leading-relaxed mb-4">Dalam rangka pelaksanaan kurikulum vokasi berbasis dunia usaha dan dunia industri, dengan ini kami sampaikan permohonan penempatan Praktik Kerja Lapangan (PKL) bagi peserta didik kami:</p>
+                    <table class="w-11/12 mx-auto mb-4 border-none text-xs leading-relaxed">
+                        <tr><td class="w-36 py-1">Nama Lengkap</td><td class="w-3 text-center">:</td><td class="font-bold uppercase">${student.namalengkap}</td></tr>
+                        <tr><td class="w-36 py-1">NISN / NIS</td><td class="w-3 text-center">:</td><td class="font-mono">${student.nisn} / ${student.nis}</td></tr>
+                        <tr><td class="w-36 py-1">Program Keahlian</td><td class="w-3 text-center">:</td><td class="font-bold">${student.kelas}</td></tr>
+                    </table>
+                    <p class="indent-8 text-justify leading-relaxed mb-4">Untuk dapat melaksanakan kegiatan magang industri kearsipan terstandar pada instansi Anda. Kami berharap kerja sama yang baik dapat senantiasa terjalin.</p>
+                    <p class="indent-8 text-justify leading-relaxed mb-4">Atas perhatian dan perkenan yang diberikan, kami ucapkan terima kasih.</p>
+                `;
+            } else {
+                // Template Surat Pengantar Umum / PIP / KJP
+                specificLetterParagraphs = `
+                    <p class="indent-8 text-justify leading-relaxed mb-4">Kepala Sekolah Menengah Kejuruan (SMK) Negeri 36 Jakarta, menerangkan dengan sebenarnya bahwa peserta didik di bawah ini:</p>
+                    <table class="w-11/12 mx-auto mb-4 border-none text-xs leading-relaxed">
+                        <tr><td class="w-36 py-1">Nama Lengkap</td><td class="w-3 text-center">:</td><td class="font-bold uppercase">${student.namalengkap}</td></tr>
+                        <tr><td class="w-36 py-1">NISN / NIS</td><td class="w-3 text-center">:</td><td class="font-mono">${student.nisn} / ${student.nis}</td></tr>
+                        <tr><td class="w-36 py-1">Kelas</td><td class="w-3 text-center">:</td><td class="font-bold">${student.kelas}</td></tr>
+                    </table>
+                    <p class="indent-8 text-justify leading-relaxed mb-4">Benar telah mengajukan permohonan pelayanan administrasi sekolah untuk kategori <strong>${letter.jenis}</strong>.</p>
+                    <p class="indent-8 text-justify leading-relaxed mb-4">Demikian surat pengantar dinas ini diberikan untuk dapat dipergunakan sebagai lampiran administrasi verifikasi kearsipan resmi: <strong class="underline">${letter.keperluan}</strong>.</p>
+                `;
+            }
+
+            const letterHTML = `
+                <!-- Kop Surat Resmi -->
+                <div class="text-center border-b-2 border-double border-black pb-4 mb-6">
+                    <h2 class="text-xs font-bold tracking-wider uppercase leading-none">PEMERINTAH PROVINSI DAERAH KHUSUS IBUKOTA JAKARTA</h2>
+                    <h2 class="text-sm font-black tracking-widest uppercase mt-1 leading-none">DINAS PENDIDIKAN</h2>
+                    <h3 class="text-base font-black uppercase mt-1.5 leading-none">SMK NEGERI 36 JAKARTA</h3>
+                    <p class="text-[9px] font-sans italic text-slate-500 mt-1.5 leading-tight">Jalan Baru Kosambi III, Kalibaru, Cilincing, Telepon/Faksimile: 4401523, 44830732</p>
+                    <p class="text-[9px] font-sans italic text-slate-500 leading-tight">http://smkn36jakarta.sch.id &bull; Email: smkn36_jkt@yahoo.com &bull; Jakarta Utara</p>
+                </div>
+
+                <!-- Judul Surat -->
+                <div class="text-center space-y-1 mb-8">
+                    <h3 class="text-sm font-bold tracking-widest uppercase underline leading-none">${letter.jenis.toUpperCase()}</h3>
+                    <p class="text-[10px] font-sans font-medium">Nomor: ${numberSurat}</p>
+                </div>
+
+                <!-- Isi Surat -->
+                <div class="space-y-4 text-xs font-serif leading-relaxed text-black">
+                    ${specificLetterParagraphs}
+                </div>
+
+                <!-- Tanda Tangan & Stempel -->
+                <div class="mt-12 flex justify-end">
+                    <div class="text-center w-72 space-y-16 relative">
+                        <!-- Stempel Dinas Transparan overlaying signature -->
+                        <div class="absolute left-4 top-2 opacity-80 pointer-events-none select-none z-10">
+                            <svg class="w-24 h-24 text-blue-800/60" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="2 1" />
+                                <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width="1.5" />
+                                <path id="curve" fill="none" stroke="none" d="M 18,50 A 32,32 0 1,1 82,50" />
+                                <text class="fill-current font-bold text-[6px] uppercase tracking-wider">
+                                    <textPath href="#curve" startOffset="50%" text-anchor="middle">SMK NEGERI 36 JAKARTA</textPath>
+                                </text>
+                                <text x="50" y="52" class="fill-current font-black text-[7px] text-center" text-anchor="middle">DINAS</text>
+                                <text x="50" y="60" class="fill-current font-black text-[7px]" text-anchor="middle">PENDIDIKAN</text>
+                            </svg>
+                        </div>
+
+                        <div>
+                            <p class="text-left pl-6">Jakarta, ${currentDateFormatted}</p>
+                            <p class="font-bold text-left pl-6">Kepala SMK NEGERI 36 JAKARTA,</p>
+                        </div>
+                        <div class="text-left pl-6">
+                            <p class="font-black underline uppercase text-xs">SRI TATI SUGIARTI, M.Pd</p>
+                            <p class="text-slate-500 text-[10px] font-sans font-medium mt-0.5">NIP. 197002281992032001</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Suntikkan ke elemen modal pratinjau dan print-area tersembunyi
+            document.getElementById('modalLetterContent').innerHTML = letterHTML;
+            document.getElementById('printLetterArea').innerHTML = letterHTML;
+
+            // Sambungkan aksi tombol cetak modal
+            document.getElementById('btnPrintPreviewLetter').onclick = function() {
+                printOfficialLetter();
+            };
+
+            // Buka Modal
+            document.getElementById('letterPreviewModal').classList.remove('hidden');
+        }
+
+        function closeLetterPreviewModal() {
+            document.getElementById('letterPreviewModal').classList.add('hidden');
+        }
+
+        function printOfficialLetter() {
+            document.body.classList.add('printing-letter-in-progress');
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => {
+                    document.body.classList.remove('printing-letter-in-progress');
+                }, 1000);
+            }, 150);
+        }
+
         function renderRiwayatSuratSiswa() {
             const tbody = document.getElementById('riwayat-surat-body');
             if (!tbody || !currentUserSession) return;
@@ -2707,13 +2938,28 @@ function doPost(e) {
                 else if (s.status === 'Selesai') badgeClass = "bg-emerald-100 text-emerald-800";
                 else if (s.status === 'Ditolak') badgeClass = "bg-red-100 text-red-800";
 
-                // Memunculkan info keterangan / balasan staf di bawah jenis surat
                 let catatanStafHtml = s.catatanStaf 
                     ? `<div class="mt-1.5 text-[10px] text-slate-600 bg-slate-100 p-2 rounded-xl border border-slate-200 leading-normal max-w-sm">
                         <span class="font-extrabold text-blue-900 block"><i class="fa-solid fa-comment-dots mr-1"></i> Balasan / Info Staf:</span>
                         <span>${s.catatanStaf}</span>
                        </div>` 
                     : '';
+
+                // Tombol Cetak / Unduh dinonaktifkan jika belum disetujui (Pending / Proses)
+                let printButton = "";
+                if (s.status === 'Selesai') {
+                    printButton = `
+                        <button onclick="showLetterPreview('${s.id}')" class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition">
+                            <i class="fa-solid fa-print"></i> Cetak / Unduh Surat
+                        </button>
+                    `;
+                } else {
+                    printButton = `
+                        <button disabled class="inline-flex items-center gap-1.5 bg-slate-100 text-slate-400 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 cursor-not-allowed">
+                            <i class="fa-solid fa-hourglass-half"></i> Menunggu Verifikasi
+                        </button>
+                    `;
+                }
 
                 tr.innerHTML = `
                     <td class="p-3 font-bold font-mono text-slate-700">${s.id}</td>
@@ -2726,9 +2972,10 @@ function doPost(e) {
                         <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${badgeClass}">
                             ${s.status}
                         </span>
+                        ${printButton}
                         ${(s.status === 'Selesai' && s.pdfFile) ? `
                             <a href="${s.pdfFile}" download="Hasil_Surat_${s.id}.pdf" class="inline-flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-lg border border-emerald-200 transition">
-                                <i class="fa-solid fa-file-arrow-down"></i> Unduh PDF
+                                <i class="fa-solid fa-file-arrow-down"></i> Lampiran PDF
                             </a>
                         ` : ''}
                     </td>
@@ -2841,6 +3088,9 @@ function doPost(e) {
                             </div>
                             
                             <div class="flex items-center gap-1 w-full justify-center">
+                                <button onclick="showLetterPreview('${s.id}')" class="bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 text-[10px] p-2 rounded-lg border border-blue-200 transition flex items-center justify-center" title="Pratinjau / Cetak Surat Digital">
+                                    <i class="fa-solid fa-print"></i>
+                                </button>
                                 <label class="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1.5 rounded-lg transition active:scale-95 flex items-center gap-1.5 justify-center border border-blue-200 flex-grow">
                                     <i class="fa-solid fa-file-arrow-up"></i>
                                     <span>${s.pdfFile ? 'Ganti PDF' : 'Upload PDF'}</span>
