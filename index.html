@@ -2698,6 +2698,7 @@ function doPost(e) {
                 const base64Data = e.target.result;
                 const gasUrl = getGasUrl();
                 let finalPdfValue = base64Data; // default lokal jika offline
+                let isUploadedToDrive = false;
 
                 // Jika terhubung ke Cloud, unggah langsung ke Google Drive melalui GAS
                 if (gasUrl) {
@@ -2723,12 +2724,14 @@ function doPost(e) {
                         const result = JSON.parse(text);
                         if (result && result.status === 'success' && result.url) {
                             finalPdfValue = result.url; // Simpan tautan unduh Drive yang sangat hemat karakter
+                            isUploadedToDrive = true;
                         } else {
                             throw new Error(result.message || "Gagal mengunggah ke Drive");
                         }
                     } catch (error) {
                         console.error("Gagal mengunggah berkas ke Drive, fallback ke lokal:", error);
-                        showToast("Batas sel terlampaui / CORS Error. Disimpan lokal saja.", "fa-triangle-exclamation", "bg-amber-600");
+                        // Berikan panduan pemecahan masalah yang ramah pengguna
+                        showToast("Koneksi Drive Dibatalkan. Berkas disimpan di Browser Lokal Anda.", "fa-triangle-exclamation", "bg-amber-600");
                     }
                 }
 
@@ -2738,10 +2741,21 @@ function doPost(e) {
                     letterRequests[index].status = "Selesai";
                     
                     localStorage.setItem('buku_induk_surat', JSON.stringify(letterRequests));
-                    showToast(`Sukses: Berkas surat ${letterId} berhasil diproses!`, 'fa-circle-check', 'bg-emerald-600');
+                    
+                    if (isUploadedToDrive) {
+                        showToast(`Sukses: Berkas surat ${letterId} berhasil diproses & disimpan di Drive!`, 'fa-circle-check', 'bg-emerald-600');
+                    } else {
+                        showToast(`Peringatan: Berkas disimpan secara LOKAL di browser ini karena akses Drive Apps Script Anda diblokir.`, 'fa-circle-exclamation', 'bg-amber-600');
+                    }
+                    
                     renderPelayananSuratAdmin();
                     
-                    autoSaveCloud('letters');
+                    // Hanya lakukan sinkronisasi cloud jika ukuran data tidak membengkak (tidak mengandung base64 PDF mentah)
+                    if (isUploadedToDrive) {
+                        autoSaveCloud('letters');
+                    } else {
+                        console.warn("Sinkronisasi otomatis ke Google Sheets dilewati untuk mencegah sel penuh (Cell Limit Overflow) akibat Base64 PDF.");
+                    }
                 }
                 event.target.value = "";
             };
@@ -3496,7 +3510,8 @@ function doPost(e) {
                 }
             } catch (error) {
                 console.error("Auto load cloud failed:", error);
-                updateCloudIndicator('error', "Koneksi terputus / CORS Block. Menggunakan database aman offline.");
+                // Menampilkan detail pesan error asli pada UI agar admin tahu letak masalahnya
+                updateCloudIndicator('error', "Koneksi Gagal (" + error.message + "). Pastikan URL berakhiran /exec dan Akses 'Anyone'.");
             }
         }
 
@@ -3540,7 +3555,8 @@ function doPost(e) {
                 }
             } catch (error) {
                 console.error("Auto save cloud failed:", error);
-                updateCloudIndicator('error', "Gagal mengunggah. Perubahan Anda aman di Local Storage lokal.");
+                // Menampilkan detail pesan error asli pada UI agar admin tahu letak masalahnya
+                updateCloudIndicator('error', "Gagal Sinkronisasi Awan (" + error.message + "). Perubahan disimpan secara lokal.");
             }
         }
 
