@@ -2679,6 +2679,34 @@ function doPost(e) {
             }
         }
 
+        // Fungsi pembantu untuk mengunggah berkas persyaratan Base64 ke Google Drive dan mengembalikan link url pendek
+        async function uploadBase64ToDrive(base64Data, fileName) {
+            const gasUrl = getGasUrl();
+            if (!gasUrl) return null;
+            
+            try {
+                const response = await fetch(gasUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    },
+                    body: JSON.stringify({
+                        type: 'uploadPdf', // Menggunakan endpoint yang sama di Code.gs untuk decode Base64 berkas apa saja
+                        fileName: fileName,
+                        data: base64Data
+                    })
+                });
+                const text = await response.text();
+                const result = JSON.parse(text);
+                if (result && result.status === 'success' && result.url) {
+                    return result.url;
+                }
+            } catch (error) {
+                console.error("Gagal mengunggah berkas persyaratan ke Google Drive:", error);
+            }
+            return null;
+        }
+
         function renderSuratDashboard() {
             if (!currentUserSession) return;
 
@@ -3082,6 +3110,192 @@ function doPost(e) {
             autoSaveCloud('letters');
         }
 
+        async function submitSurat(event) {
+            event.preventDefault();
+            
+            const nis = document.getElementById('surat-nis').value;
+            const jenis = document.getElementById('surat-jenis').value;
+            const keperluan = document.getElementById('surat-keperluan').value.trim();
+
+            if (!keperluan) {
+                showToast('Tujuan permohonan surat wajib diisi!', 'fa-exclamation-circle', 'bg-amber-600');
+                return;
+            }
+
+            let finalKeperluan = keperluan;
+            let scanKk = "";
+            let scanRek = "";
+            let scanPolice = "";
+            let scanPipKk = "";
+            let scanPipAkta = "";
+            let scanPipKtportu = "";
+
+            if (jenis === "Surat Pengantar PKL") {
+                const perusahaan = document.getElementById('surat-pkl-perusahaan').value.trim();
+                const alamatPkl = document.getElementById('surat-pkl-alamat').value.trim();
+                
+                if (!perusahaan || !alamatPkl) {
+                    showToast('Nama dan Alamat Perusahaan wajib diisi untuk Surat PKL!', 'fa-exclamation-circle', 'bg-amber-600');
+                    return;
+                }
+                finalKeperluan = `Perusahaan: ${perusahaan} | Alamat: ${alamatPkl} | Keperluan: ${keperluan}`;
+            }
+
+            if (jenis === "Surat Pembukaan Blokir KJP") {
+                if (!uploadKjpKkBase64 || !uploadKjpRekBase64) {
+                    showToast('Harap lengkapi semua dokumen scan yang diwajibkan!', 'fa-circle-exclamation', 'bg-red-950');
+                    return;
+                }
+            }
+
+            if (jenis === "Surat Kehilangan KJP/PIP") {
+                if (!uploadLostPoliceBase64 || !uploadLostKkBase64 || !uploadLostRekBase64) {
+                    showToast('Harap lengkapi semua dokumen scan yang diwajibkan!', 'fa-circle-exclamation', 'bg-red-950');
+                    return;
+                }
+            }
+
+            if (jenis === "Surat Aktivasi PIP") {
+                if (!uploadPipKkBase64 || !uploadPipAktaBase64 || !uploadPipKtportuBase64) {
+                    showToast('Harap lengkapi semua dokumen scan yang diwajibkan!', 'fa-circle-exclamation', 'bg-red-950');
+                    return;
+                }
+            }
+
+            // PROSES UPLOAD BERKAS KE GOOGLE DRIVE (JIKA CLOUD AKTIF)
+            const gasUrl = getGasUrl();
+            const timestamp = Date.now();
+
+            if (gasUrl) {
+                showToast('Mengunggah berkas persyaratan ke Google Drive...', 'fa-spinner animate-spin', 'bg-indigo-900');
+                
+                // Upload KJP Files
+                if (jenis === "Surat Pembukaan Blokir KJP") {
+                    if (uploadKjpKkBase64) {
+                        scanKk = await uploadBase64ToDrive(uploadKjpKkBase64, `KK_${nis}_${timestamp}.png`);
+                    }
+                    if (uploadKjpRekBase64) {
+                        scanRek = await uploadBase64ToDrive(uploadKjpRekBase64, `Rekening_${nis}_${timestamp}.png`);
+                    }
+                }
+                
+                // Upload Kehilangan Files
+                if (jenis === "Surat Kehilangan KJP/PIP") {
+                    if (uploadLostPoliceBase64) {
+                        scanPolice = await uploadBase64ToDrive(uploadLostPoliceBase64, `Police_${nis}_${timestamp}.png`);
+                    }
+                    if (uploadLostKkBase64) {
+                        scanKk = await uploadBase64ToDrive(uploadLostKkBase64, `KK_Hilang_${nis}_${timestamp}.png`);
+                    }
+                    if (uploadLostRekBase64) {
+                        scanRek = await uploadBase64ToDrive(uploadLostRekBase64, `Rekening_Hilang_${nis}_${timestamp}.png`);
+                    }
+                }
+
+                // Upload PIP Files
+                if (jenis === "Surat Aktivasi PIP") {
+                    if (uploadPipKkBase64) {
+                        scanPipKk = await uploadBase64ToDrive(uploadPipKkBase64, `PIP_KK_${nis}_${timestamp}.png`);
+                    }
+                    if (uploadPipAktaBase64) {
+                        scanPipAkta = await uploadBase64ToDrive(uploadPipAktaBase64, `PIP_Akta_${nis}_${timestamp}.png`);
+                    }
+                    if (uploadPipKtportuBase64) {
+                        scanPipKtportu = await uploadBase64ToDrive(uploadPipKtportuBase64, `PIP_KTP_Ortu_${nis}_${timestamp}.png`);
+                    }
+                }
+            } else {
+                // FALLBACK OFFLINE (SIMPAN BASE64 LOKAL DENGAN PERINGATAN UKURAN)
+                showToast('Offline Mode: Berkas disimpan sementara di browser Anda.', 'fa-triangle-exclamation', 'bg-amber-600');
+                scanKk = uploadKjpKkBase64;
+                scanRek = uploadKjpRekBase64;
+                scanPolice = uploadLostPoliceBase64;
+                scanPipKk = uploadPipKkBase64;
+                scanPipAkta = uploadPipAktaBase64;
+                scanPipKtportu = uploadPipKtportuBase64;
+            }
+
+            const request = {
+                id: "SRT-" + Date.now().toString().slice(-4),
+                date: new Date().toISOString().slice(0, 10),
+                nis: nis,
+                jenis: jenis,
+                keperluan: finalKeperluan,
+                scanKk: scanKk,
+                scanRek: scanRek,
+                scanPolice: scanPolice,
+                scanPipKk: scanPipKk,
+                scanPipAkta: scanPipAkta,
+                scanPipKtportu: scanPipKtportu,
+                status: "Pending",
+                catatanStaf: ""
+            };
+
+            letterRequests.push(request);
+            localStorage.setItem('buku_induk_surat', JSON.stringify(letterRequests));
+
+            // Reset formulir & state upload setelah selesai
+            document.getElementById('surat-keperluan').value = '';
+            uploadKjpKkBase64 = "";
+            uploadKjpRekBase64 = "";
+            uploadLostPoliceBase64 = "";
+            uploadLostKkBase64 = "";
+            uploadLostRekBase64 = "";
+            uploadPipKkBase64 = "";
+            uploadPipAktaBase64 = "";
+            uploadPipKtportuBase64 = "";
+            
+            const kkInput = document.getElementById('surat-kjp-kk');
+            const rekInput = document.getElementById('surat-kjp-rek');
+            if (kkInput) kkInput.value = "";
+            if (rekInput) rekInput.value = "";
+
+            const lostPoliceInput = document.getElementById('surat-lost-police');
+            const lostKkInput = document.getElementById('surat-lost-kk');
+            const lostRekInput = document.getElementById('surat-lost-rek');
+            if (lostPoliceInput) lostPoliceInput.value = "";
+            if (lostKkInput) lostKkInput.value = "";
+            if (lostRekInput) lostRekInput.value = "";
+
+            const pipKkInput = document.getElementById('surat-pip-kk');
+            const pipAktaInput = document.getElementById('surat-pip-akta');
+            const pipKtportuInput = document.getElementById('surat-pip-ktportu');
+            if (pipKkInput) pipKkInput.value = "";
+            if (pipAktaInput) pipAktaInput.value = "";
+            if (pipKtportuInput) pipKtportuInput.value = "";
+
+            const kkStatus = document.getElementById('kjp-kk-status');
+            const rekStatus = document.getElementById('kjp-rek-status');
+            if (kkStatus) kkStatus.classList.add('hidden');
+            if (rekStatus) rekStatus.classList.add('hidden');
+
+            const lostPoliceStatus = document.getElementById('lost-police-status');
+            const lostKkStatus = document.getElementById('lost-kk-status');
+            const lostRekStatus = document.getElementById('lost-rek-status');
+            if (lostPoliceStatus) lostPoliceStatus.classList.add('hidden');
+            if (lostKkStatus) lostKkStatus.classList.add('hidden');
+            if (lostRekStatus) lostRekStatus.classList.add('hidden');
+
+            const pipKkStatus = document.getElementById('pip-kk-status');
+            const pipAktaStatus = document.getElementById('pip-akta-status');
+            const pipKtportuStatus = document.getElementById('pip-ktportu-status');
+            if (pipKkStatus) pipKkStatus.classList.add('hidden');
+            if (pipAktaStatus) pipAktaStatus.classList.add('hidden');
+            if (pipKtportuStatus) pipKtportuStatus.classList.add('hidden');
+
+            const pklPerusahaan = document.getElementById('surat-pkl-perusahaan');
+            const pklAlamat = document.getElementById('surat-pkl-alamat');
+            if (pklPerusahaan) pklPerusahaan.value = '';
+            if (pklAlamat) pklAlamat.value = '';
+
+            toggleDynamicLetterFields();
+
+            showToast('Permohonan surat berhasil dikirim!', 'fa-circle-check', 'bg-emerald-600');
+            renderRiwayatSuratSiswa();
+            
+            autoSaveCloud('letters');
+        }
+
         // Render & cetak surat dinamis berbasis data kearsipan siswa
         function showLetterPreview(letterId) {
             const letter = letterRequests.find(s => s.id === letterId);
@@ -3344,43 +3558,43 @@ function doPost(e) {
                 let attachmentHTML = "";
                 if (s.scanKk) {
                     attachmentHTML += `
-                        <a href="${s.scanKk}" download="Scan_KK_${nisnPemohon}.png" class="inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-lg mt-2 transition mr-1">
-                            <i class="fa-solid fa-file-image"></i> Scan KK
+                        <a href="${s.scanKk}" target="_blank" class="inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-lg mt-2 transition mr-1">
+                            <i class="fa-solid fa-file-image"></i> Lihat KK
                         </a>
                     `;
                 }
                 if (s.scanRek) {
                     attachmentHTML += `
-                        <a href="${s.scanRek}" download="Scan_Rekening_${nisnPemohon}.png" class="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-lg mt-2 transition mr-1">
-                            <i class="fa-solid fa-file-invoice-dollar"></i> Scan Tabungan
+                        <a href="${s.scanRek}" target="_blank" class="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-lg mt-2 transition mr-1">
+                            <i class="fa-solid fa-file-invoice-dollar"></i> Lihat Tabungan
                         </a>
                     `;
                 }
                 if (s.scanPolice) {
                     attachmentHTML += `
-                        <a href="${s.scanPolice}" download="Scan_Kehilangan_Kepolisian_${nisnPemohon}.png" class="inline-flex items-center gap-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-1 rounded-lg mt-2 transition mr-1">
-                            <i class="fa-solid fa-building-shield"></i> Scan Kepolisian
+                        <a href="${s.scanPolice}" target="_blank" class="inline-flex items-center gap-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-1 rounded-lg mt-2 transition mr-1">
+                            <i class="fa-solid fa-building-shield"></i> Lihat Kepolisian
                         </a>
                     `;
                 }
                 if (s.scanPipKk) {
                     attachmentHTML += `
-                        <a href="${s.scanPipKk}" download="Scan_KK_PIP_${nisnPemohon}.png" class="inline-flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 text-[10px] font-bold px-2 py-1 rounded-lg mt-2 transition mr-1">
-                            <i class="fa-solid fa-people-roof"></i> Scan KK (PIP)
+                        <a href="${s.scanPipKk}" target="_blank" class="inline-flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 text-[10px] font-bold px-2 py-1 rounded-lg mt-2 transition mr-1">
+                            <i class="fa-solid fa-people-roof"></i> Lihat KK (PIP)
                         </a>
                     `;
                 }
                 if (s.scanPipAkta) {
                     attachmentHTML += `
-                        <a href="${s.scanPipAkta}" download="Scan_Akta_PIP_${nisnPemohon}.png" class="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-lg mt-2 transition mr-1">
-                            <i class="fa-solid fa-cake-candles"></i> Scan Akta
+                        <a href="${s.scanPipAkta}" target="_blank" class="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-lg mt-2 transition mr-1">
+                            <i class="fa-solid fa-cake-candles"></i> Lihat Akta
                         </a>
                     `;
                 }
                 if (s.scanPipKtportu) {
                     attachmentHTML += `
-                        <a href="${s.scanPipKtportu}" download="Scan_KTP_Ortu_PIP_${nisnPemohon}.png" class="inline-flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-1 rounded-lg mt-2 transition mr-1">
-                            <i class="fa-solid fa-id-card"></i> Scan KTP Ortu
+                        <a href="${s.scanPipKtportu}" target="_blank" class="inline-flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-1 rounded-lg mt-2 transition mr-1">
+                            <i class="fa-solid fa-id-card"></i> Lihat KTP Ortu
                         </a>
                     `;
                 }
