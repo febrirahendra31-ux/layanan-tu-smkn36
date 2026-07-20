@@ -1754,60 +1754,7 @@ function doPost(e) {
             'retna': { password: 'retna', name: 'Bu Retna (Staf Administrasi)', role: 'staf_surat' }
         };
 
-        // Data Mock Bawaan
-        const mockData = [
-            {
-                id: 1,
-                nisn: "0081234567",
-                nis: "2425001",
-                nik: "3172010101010001",
-                namalengkap: "Aditya Pratama",
-                jeniskelamin: "Laki-Laki",
-                agama: "Islam",
-                tempatlahir: "Jakarta",
-                tanggallahir: "2008-05-12",
-                kewarganegaraan: "WNI",
-                anakke: "1",
-                berkebutuhankhusus: "Tidak",
-                alamat: "Jl. Kosambi III No. 12, Kalibaru, Cilincing, Jakarta Utara",
-                notelepon: "081234567890",
-                namaayah: "Budi Pratama",
-                nikayah: "3172010101010002",
-                thnlahirayah: "1975",
-                pendidikanayah: "SMA",
-                pekerjaanayah: "Wiraswasta",
-                namaibu: "Siti Aminah",
-                nikibu: "3172010101010003",
-                thnlahiribu: "1980",
-                pendidikanibu: "SMA",
-                pekerjaanibu: "Ibu Rumah Tangga",
-                alamatorangtua: "Jl. Kosambi III No. 12, Kalibaru, Cilincing, Jakarta Utara",
-                nama_wali: "",
-                pekerjaan_wali: "",
-                kelas: "XI-TKJ",
-                tahunajaran: "2025/2026",
-                sekolahasal: "SMP Negeri 123 Jakarta",
-                tanggallasuk: "2024-07-15",
-                status: "Aktif",
-                foto: "",
-                nilai: {
-                    "1": { pabp: 85, pp: 88, bin: 82, pjok: 90, sjr: 80, seni: 85, mtk: 78, ing: 80, info: 88, pipas: 84, ddpk: 85, kk: "", pkk: "", pkl: "", mpp: "" }
-                }
-            }
-        ];
         
-        const mockSurat = [
-            {
-                id: "SRT-9991",
-                date: "2026-07-18",
-                nis: "2425001",
-                jenis: "Surat Keterangan Aktif",
-                keperluan: "Pengajuan Beasiswa KJP Plus",
-                status: "Pending",
-                catatanStaf: "",
-                pdfFile: ""
-            }
-        ];
         
         function setSafeText(id, text) {
             const el = document.getElementById(id);
