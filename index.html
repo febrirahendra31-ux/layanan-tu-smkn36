@@ -797,6 +797,7 @@ function doPost(e) {
     
     if (parsedData.type === 'students') {
        sheet.getRange("A2").setValue(JSON.stringify(parsedData.data));
+        sheet.getRange("A3").setValue(JSON.stringify(parsedData.data));
     } else if (parsedData.type === 'letters') {
        sheet.getRange("B2").setValue(JSON.stringify(parsedData.data));
     }
