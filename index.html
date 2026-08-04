@@ -776,7 +776,7 @@ function doGet(e) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   
   let data = {
-    students: sheet.getRange("A2:A7").getValue() || "[]",
+    students: sheet.getRange("A2").getValue() || "[]",
     letters: sheet.getRange("B2").getValue() || "[]"
   };
   
@@ -796,7 +796,7 @@ function doPost(e) {
     const parsedData = JSON.parse(e.postData.contents);
     
     if (parsedData.type === 'students') {
-       sheet.getRange("A2:A7").setValue(JSON.stringify(parsedData.data));
+       sheet.getRange("A2").setValue(JSON.stringify(parsedData.data));
     } else if (parsedData.type === 'letters') {
        sheet.getRange("B2").setValue(JSON.stringify(parsedData.data));
     }
