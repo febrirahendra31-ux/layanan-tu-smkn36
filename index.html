@@ -777,6 +777,7 @@ function doGet(e) {
   
   let data = {
     students: sheet.getRange("A2").getValue() || "[]",
+    students: sheet.getRange("A3").getValue() || "[]",
     letters: sheet.getRange("B2").getValue() || "[]"
   };
   
